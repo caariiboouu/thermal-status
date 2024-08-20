@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import SwiftData
 
 @available(iOS 17, *)
 struct ThermalHistoryView: View {
@@ -11,29 +12,35 @@ struct ThermalHistoryView: View {
         case hourly, daily, weekly, monthly, yearly
     }
     
-    var body: some View {
-        VStack {
-            Picker("Time Range", selection: $timeRange) {
-                ForEach(TimeRange.allCases, id: \.self) { range in
-                    Text(range.rawValue.capitalized)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
-            .padding()
-            
-            ThermalChart(records: filteredRecords)
-            
-            List(filteredRecords) { record in
-                VStack(alignment: .leading) {
-                    Text("State: \(thermalStateString(for: record.state))")
-                    Text("Charging: \(record.isCharging ? "Yes" : "No")")
-                    Text("Battery: \(Int(record.batteryLevel * 100))%")
-                    Text("Active Info: \(record.activeAppInfo)")
-                    Text("Time: \(formatDate(record.timestamp))")
-                }
-            }
-        }
+    // Add a public initializer
+    public init() {
+        // The @Query property wrapper initializes itself,
+        // so we don't need to do anything here.
     }
+    
+    var body: some View {
+         VStack {
+             Picker("Time Range", selection: $timeRange) {
+                 ForEach(TimeRange.allCases, id: \.self) { range in
+                     Text(range.rawValue.capitalized)
+                 }
+             }
+             .pickerStyle(SegmentedPickerStyle())
+             .padding()
+             
+             ThermalChart(records: filteredRecords)
+             
+             List(filteredRecords) { record in
+                 VStack(alignment: .leading) {
+                     Text("State: \(thermalStateString(for: record.state))")
+                     Text("Charging: \(record.isCharging ? "Yes" : "No")")
+                     Text("Battery: \(Int(record.batteryLevel * 100))%")
+                     Text("Active Info: \(record.activeAppInfo)")
+                     Text("Time: \(formatDate(record.timestamp))")
+                 }
+             }
+         }
+     }
     
     private var filteredRecords: [ThermalRecord] {
         let calendar = Calendar.current

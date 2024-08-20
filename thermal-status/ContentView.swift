@@ -3,13 +3,13 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @StateObject private var thermalMonitor: ThermalMonitor
+    @State private var thermalMonitor: ThermalMonitor
     
     init() {
         if #available(iOS 17, *) {
-            _thermalMonitor = StateObject(wrappedValue: ThermalMonitor(modelContext: modelContext))
+            _thermalMonitor = State(initialValue: ThermalMonitor(modelContext: ModelContext(try! ModelContainer(for: ThermalRecord.self))))
         } else {
-            _thermalMonitor = StateObject(wrappedValue: ThermalMonitor(modelContext: nil))
+            _thermalMonitor = State(initialValue: ThermalMonitor(modelContext: nil))
         }
     }
     
@@ -23,7 +23,9 @@ struct ContentView: View {
                     .padding()
                 
                 if #available(iOS 17, *) {
-                    NavigationLink(destination: ThermalHistoryView()) {
+                    NavigationLink {
+                        ThermalHistoryView()
+                    } label: {
                         Text("View History")
                             .padding()
                             .background(Color.blue)

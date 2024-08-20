@@ -2,7 +2,8 @@ import Foundation
 import Combine
 import SwiftData
 import UIKit
-
+import Observation
+import WidgetKit
 @Observable
 class ThermalMonitor {
     var thermalState: ProcessInfo.ThermalState = .nominal
@@ -11,9 +12,13 @@ class ThermalMonitor {
     
     private var observer: NSObjectProtocol?
     private var modelContext: ModelContext?
+    private let userDefaults: UserDefaults
+    
+    static let shared = ThermalMonitor(modelContext: nil)
     
     init(modelContext: ModelContext?) {
         self.modelContext = modelContext
+        self.userDefaults = UserDefaults(suiteName: "group.com.yourcompany.thermal-status")!
         updateThermalState()
         updateBatteryInfo()
         setupObservers()
@@ -25,8 +30,8 @@ class ThermalMonitor {
             object: nil,
             queue: .main) { [weak self] _ in
                 self?.updateThermalState()
-            }
-        
+    }
+    
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(batteryStateDidChange),
@@ -46,6 +51,11 @@ class ThermalMonitor {
         let newState = ProcessInfo.processInfo.thermalState
         thermalState = newState
         saveThermalState(newState)
+        
+        // Save to UserDefaults for widget access
+        userDefaults.set(getCurrentThermalStateString(), forKey: "currentThermalState")
+        
+        WidgetCenter.shared.reloadAllTimelines()
     }
     
     private func updateBatteryInfo() {
@@ -59,8 +69,8 @@ class ThermalMonitor {
     
     @objc private func batteryLevelDidChange(_ notification: Notification) {
         updateBatteryInfo()
-    }
-    
+        }
+
     private func saveThermalState(_ state: ProcessInfo.ThermalState) {
         guard let modelContext = modelContext else { return }
         
@@ -78,13 +88,23 @@ class ThermalMonitor {
             try modelContext.save()
         } catch {
             print("Failed to save thermal state: \(error)")
-        }
     }
+}
     
     private func getActiveAppInfo() -> String {
         let workspaceInfo = ProcessInfo.processInfo.activeProcessorCount
         let memoryUsage = Float(ProcessInfo.processInfo.physicalMemory) / (1024.0 * 1024.0 * 1024.0) // in GB
         return "Processors: \(workspaceInfo), Memory: \(String(format: "%.2f", memoryUsage)) GB"
+    }
+    
+    func getCurrentThermalStateString() -> String {
+        switch thermalState {
+        case .nominal: return "Nominal"
+        case .fair: return "Fair"
+        case .serious: return "Serious"
+        case .critical: return "Critical"
+        @unknown default: return "Unknown"
+        }
     }
     
     deinit {
